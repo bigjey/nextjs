@@ -1,3 +1,3 @@
-export default function () {
-  return <>1111</>;
+export default function AdminIndexPage() {
+  return <>Admin</>;
 }
