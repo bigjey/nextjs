@@ -7,7 +7,247 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Test {
-  id   String @id @default(auto()) @map("_id") @db.ObjectId
-  text String
+model Category {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  parentId  String?    @db.ObjectId
+  sortOrder Int?       @default(1)
+  isActive  Boolean
+  createdAt DateTime   @default(now()) @db.Timestamp()
+  updatedAt DateTime?
+  parent    Category?  @relation("parent", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children  Category[] @relation("parent")
+  Product   Product[]
+
+  @@index([parentId])
+}
+
+model Product {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  price          Float           @default(0.0)
+  description    String?
+  isAvailable    Boolean         @default(true)
+  isActive       Boolean         @default(true)
+  isFeatured     Boolean         @default(false)
+  saleValue      Int?
+  categoryId     String?         @db.ObjectId
+  specPresetId   String          @db.ObjectId
+  productGroupId String?         @db.ObjectId
+  category       Category?       @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  images         ProductImage[]
+  reviews        ProductReview[]
+  specValues     SpecValue[]
+  specPreset     SpecPreset      @relation(fields: [specPresetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  productGroup   ProductGroup?   @relation(fields: [productGroupId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rating         Float?          @default(0.0)
+
+  @@index([categoryId])
+  @@index([specPresetId])
+  @@index([productGroupId])
+}
+
+model ProductGroup {
+  id       String             @id @default(auto()) @map("_id") @db.ObjectId
+  name     String             @unique
+  products Product[]
+  specs    ProductGroupSpec[]
+}
+
+model ProductGroupSpec {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  productGroupId String @db.ObjectId
+  specId         String @db.ObjectId
+
+  productGroup ProductGroup @relation(fields: [productGroupId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  spec         Spec         @relation(fields: [specId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([productGroupId, specId])
+  @@index([productGroupId])
+  @@index([specId])
+}
+
+enum ReviewStatus {
+  new
+  pending
+  proofed
+}
+
+model ProductReview {
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  text      String
+  score     Int
+  status    ReviewStatus @default(new)
+  userId    Int
+  createdAt DateTime     @default(now()) @db.Timestamp()
+  productId String       @db.ObjectId
+  product   Product      @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([productId])
+}
+
+model Spec {
+  id                String                @id @default(auto()) @map("_id") @db.ObjectId
+  name              String                @unique()
+  values            SpecPresetGroupItem[]
+  ProductGroupSpecs ProductGroupSpec[]
+}
+
+model SpecPreset {
+  id           String            @id @default(auto()) @map("_id") @db.ObjectId
+  name         String            @unique()
+  presetGroups SpecPresetGroup[]
+  products     Product[]
+}
+
+model SpecPresetGroup {
+  id               String                @id @default(auto()) @map("_id") @db.ObjectId
+  name             String                @unique()
+  presetId         String                @db.ObjectId
+  preset           SpecPreset            @relation(fields: [presetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sortOrder        Int                   @default(1)
+  presetGroupItems SpecPresetGroupItem[]
+
+  @@index([presetId])
+}
+
+model SpecPresetGroupItem {
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  presetGroupId String          @db.ObjectId
+  specId        String          @db.ObjectId
+  sortOrder     Int             @default(1)
+  presetGroup   SpecPresetGroup @relation(fields: [presetGroupId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  values        SpecValue[]
+  spec          Spec            @relation(fields: [specId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([presetGroupId])
+  @@index([specId])
+}
+
+model SpecValue {
+  id                    String              @id @default(auto()) @map("_id") @db.ObjectId
+  productId             String              @db.ObjectId
+  specPresetGroupItemId String              @db.ObjectId
+  value                 String
+  product               Product             @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  presetGroupItem       SpecPresetGroupItem @relation(fields: [specPresetGroupItemId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([productId, specPresetGroupItemId], map: "productId_specPresetGroupItemId_unique_constraint")
+  @@index([specPresetGroupItemId])
+}
+
+model ProductImage {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  publicId  String
+  sortOrder Int     @default(1)
+  productId String  @db.ObjectId
+  product   Product @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([productId])
+}
+
+enum UserRole {
+  SuperAdmin
+  Admin
+  Customer
+}
+
+model User {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  name      String?
+  email     String        @unique
+  password  String
+  role      UserRole
+  addresses UserAddress[]
+  orders    Order[]
+}
+
+model UserAddress {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  user        User    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  userId      String  @db.ObjectId
+  firstName   String
+  lastName    String
+  postalCode  String
+  street      String
+  houseNumber String
+  city        String
+  orders      Order[]
+
+  @@unique([id, userId], map: "id_userId")
+  @@index([userId])
+}
+
+model ResetToken {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    Int
+  token     String
+  createdAt DateTime @default(now()) @db.Timestamp()
+}
+
+model Session {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  sid       String   @unique
+  data      String
+  expiresAt DateTime
+}
+
+model CartItem {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId String   @db.ObjectId
+  qty       Int
+  userId    Int?
+  sessionId String?
+  updatedAt DateTime @default(now()) @db.Timestamp()
+  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([productId, userId], map: "productId_userId")
+  @@unique([productId, sessionId], map: "productId_sessionId")
+}
+
+enum OrderPaymentType {
+  Cash
+  Card
+  Crypto
+}
+
+enum OrderStatus {
+  pending
+  accepted
+  cancelled
+  completed
+}
+
+model Order {
+  id                String           @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt         DateTime         @default(now()) @db.Timestamp()
+  deliveryAddressId String           @db.ObjectId
+  deliveryAddress   UserAddress      @relation(fields: [deliveryAddressId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  phoneNumber       String
+  email             String
+  userId            String           @db.ObjectId
+  user              User             @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  paymentType       OrderPaymentType @default(Card)
+  orderStatus       OrderStatus      @default(pending)
+  orderItems        OrderItem[]
+
+  @@index([deliveryAddressId])
+  @@index([userId])
+}
+
+model OrderItem {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  productId   String  @db.ObjectId
+  product     Product @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  productName String
+  qty         Int
+  price       Float
+  orderId     String  @db.ObjectId
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([productId])
+  @@index([orderId])
 }
