@@ -43,6 +43,15 @@ export default function ShopLayout({
           Sign In
         </Link>
         <Link
+          href="/register"
+          className={classNames({
+            ["text-gray-800"]: pathname === "/register",
+            ["text-blue-500"]: pathname !== "/register",
+          })}
+        >
+          Sign Up
+        </Link>
+        <Link
           href="/admin"
           className={classNames({
             ["text-gray-800"]: pathname === "/admin",
