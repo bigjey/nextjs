@@ -17,14 +17,17 @@ export async function POST(request: Request) {
     const user = await prismaClient.user.findUnique({
       where: { email: parsed.data.email },
     });
-    if (!user) {
+    if (!user || !user.hashedPassword) {
       return NextResponse.json(
         { form: "Wrong email or password" },
         { status: 400 }
       );
     }
 
-    const match = await bcrypt.compare(parsed.data.password, user.password);
+    const match = await bcrypt.compare(
+      parsed.data.password,
+      user.hashedPassword
+    );
     if (!match) {
       return NextResponse.json(
         { form: "Wrong email or password" },

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { LoginSchemaType } from "~/app/libs/LoginModel";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 export default function RegisterPage() {
   const passwordRef = useRef<HTMLInputElement | null>(null);
@@ -24,30 +25,20 @@ export default function RegisterPage() {
           setLoading(true);
           setErrors({});
 
-          const payload: LoginSchemaType = {
-            email: emailRef.current!.value,
-            password: passwordRef.current!.value,
-          } as any;
-
-          const r = await fetch("/api/auth/login", {
-            method: "post",
-            headers: {
-              "content-type": "application/json",
-            },
-            body: JSON.stringify(payload),
+          const result = await signIn("credentials", {
+            email: emailRef.current?.value,
+            password: passwordRef.current?.value,
+            redirect: false,
           });
 
-          const d = await r.json();
-          if (r.ok) {
+          if (!result) {
+            setErrors({ form: "Failed to process" });
+          } else if (result.ok) {
             router.push("/");
+          } else if (result.error) {
+            setErrors({ form: result.error });
           } else {
-            if (r.status === 400) {
-              setErrors(d);
-            } else {
-              setErrors({
-                form: "Failed to process",
-              });
-            }
+            setErrors({ form: "Failed to process" });
           }
           setLoading(false);
         }}
@@ -84,6 +75,17 @@ export default function RegisterPage() {
           <div className="text-red-400 text-sm">{errors.form}</div>
         ) : null}
       </form>
+      <div>or</div>
+      <button
+        type="button"
+        className="border-[1px] border-blue-500 p-4 rounded"
+        disabled={loading}
+        onClick={async () => {
+          await signIn("github", { callbackUrl: "/" });
+        }}
+      >
+        {loading ? "Processing..." : "Sign using Github"}
+      </button>
     </div>
   );
 }

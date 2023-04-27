@@ -1,12 +1,15 @@
+"use client";
+
 import "./globals.css";
 import { Inter } from "next/font/google";
+import { SessionProvider } from "next-auth/react";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata = {
-  title: "Yo",
-  description: "Ho",
-};
+// export const metadata = {
+//   title: "Yo",
+//   description: "Ho",
+// };
 
 export default function RootLayout({
   children,
@@ -14,15 +17,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <div className="p-6 border-sky-400 border-dotted relative border-2">
-          <div className="absolute left-1 top-1 text-sky-400">
-            global layout
+    <SessionProvider refetchOnWindowFocus={false}>
+      <html lang="en">
+        <body className={inter.className}>
+          <div className="p-6 border-sky-400 border-dotted relative border-2">
+            <div className="absolute left-1 top-1 text-sky-400">
+              global layout
+            </div>
+            {children}
           </div>
-          {children}
-        </div>
-      </body>
-    </html>
+        </body>
+      </html>
+    </SessionProvider>
   );
 }

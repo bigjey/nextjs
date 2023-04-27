@@ -1,4 +1,4 @@
-import { UserRole } from "@prisma/client";
+// import { UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { RegisterSchema } from "~/app/libs/RegisterModel";
 import bcrypt from "bcrypt";
@@ -24,15 +24,14 @@ export async function POST(request: Request) {
     });
   }
 
-  const { passwordConfirm, ...payload } = parsed.data;
-
   try {
-    const hashedPassword = await bcrypt.hash(payload.password, 10);
+    const hashedPassword = await bcrypt.hash(parsed.data.password, 10);
     await prisma.user.create({
       data: {
-        ...payload,
-        password: hashedPassword,
-        role: UserRole.Customer,
+        email: parsed.data.email,
+        name: parsed.data.name,
+        hashedPassword: hashedPassword,
+        // role: UserRole.Customer,
       },
     });
     return NextResponse.json(

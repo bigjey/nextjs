@@ -7,7 +7,7 @@ export default async function ShopIndexPage() {
 
   return (
     <div>
-      Shop Index 3
+      <div>Shop Index 3</div>
       {users.map((u, index) => (
         <div key={index}>{u.email}</div>
       ))}
